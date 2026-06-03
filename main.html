@@ -7,7 +7,7 @@
     <script src="script.js" defer></script>
 </head>
 <body>
-
+    <link rel="stylesheet" href="style.css">
     <header>
         <h1 id="generatedstring"></h1>
     </header>
@@ -15,9 +15,18 @@
     <main>
         <div class="controls">
         <button id="startBtn">Start Audio</button>
-        <label>
+        <div>
+            <label>Frequency:</label>
             <input type="text" id="freq" value="440">
-        </label>
+        </div>
+        <div>
+            <label>Offset:</label>
+            <input type="text" id="offset" value="0.5">
+        </div>
+        <div>
+            <label>Duration:</label>
+            <input type="text" id="duration" value="0.5">
+        </div>
     </div>
     </main>
 
