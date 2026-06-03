@@ -17,10 +17,10 @@ document.getElementById('startBtn').addEventListener('click', async () => {
         // Start audio: create oscillator and gain node
         oscillator = audioContext.createOscillator();
         oscillator.type = 'square';
-        oscillator.frequency.value = document.getElementById('freqSlider').value; // Sync with slider
+        oscillator.frequency.value = document.getElementById('freq').value; // Sync with box
  
         gainNode = audioContext.createGain();
-        gainNode.gain.value = document.getElementById('volSlider').value; // Sync with slider
+        gainNode.gain.value = 0.15; 
  
         oscillator.connect(gainNode).connect(audioContext.destination);
         oscillator.start();
@@ -33,24 +33,34 @@ document.getElementById('startBtn').addEventListener('click', async () => {
         gainNode.disconnect();
  
         document.getElementById('startBtn').textContent = 'Start Audio';
-    }
+    } 
 });
 
+function showError(string) {
+	var genbox = document.getElementById("generatedstring");
+	if (genbox != null) {
+        genbox.style.visibility = "visible";
+        genbox.style.color = "#ffff00";
+        genbox.style.animation = "";
+        genbox.style.animation = "fadeout 2s";
+        timeoutGenerate = setTimeout(FinishedFading, 1900, genbox);
+        genbox.innerHTML = "Stimmt";
+    }
+}
+
 // Frequency Slider Controls
-document.getElementById('freqSlider').addEventListener('input', (e) => {
+document.getElementById('freq').addEventListener('input', (e) => {
     const freq = parseFloat(e.target.value);
+    if (Number.isNaN(result) || result < 20 | result > 20_000) {
+    	document.getElementById("generatedstring").value = 440;
+    	const freq = parseFloat(e.target.value);
+    	oscillator.frequency.value = 440;
+
+    	showError("Invalid Input. Setting back to 440.")
+    } 
+
     if (oscillator) {
         oscillator.frequency.value = freq; // Update oscillator frequency
     }
-    document.getElementById('freqValue').textContent = freq; // Update display
 });
 
-
-// Update volume when slider changes
-document.getElementById('volSlider').addEventListener('input', (e) => {
-    const vol = parseFloat(e.target.value);
-    if (gainNode) {
-        gainNode.gain.value = vol; // Update gain
-    }
-    document.getElementById('volValue').textContent = vol.toFixed(2); // Update display
-});

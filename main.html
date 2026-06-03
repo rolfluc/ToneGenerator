@@ -9,20 +9,14 @@
 <body>
 
     <header>
-        <h1>Welcome to My Site</h1>
+        <h1 id="generatedstring"></h1>
     </header>
 
     <main>
         <div class="controls">
-            <h2>Perpetual Sine Wave Synth</h2>
         <button id="startBtn">Start Audio</button>
         <label>
-            Frequency (Hz): <span id="freqValue">440</span>
-            <input type="range" id="freqSlider" min="20" max="20000" value="440">
-        </label>
-        <label>
-            Volume: <span id="volValue">0.5</span>
-            <input type="range" id="volSlider" min="0" max="1" step="0.01" value="0.5">
+            <input type="text" id="freq" value="440">
         </label>
     </div>
     </main>
