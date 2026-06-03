@@ -13,19 +13,21 @@
     </header>
 
     <main>
-        <div class="controls">
+        <div class="controls" id="controls">
         <button id="startBtn">Start Audio</button>
         <div>
-            <label>Frequency:</label>
-            <input type="text" id="freq" value="440">
-        </div>
-        <div>
-            <label>Offset:</label>
-            <input type="text" id="offset" value="0.5">
-        </div>
-        <div>
-            <label>Duration:</label>
-            <input type="text" id="duration" value="0.5">
+            <div>
+                <label>Frequency:</label>
+                <input type="number" id="freq" value="440" min="20" max="20000" class="numeric-only">
+            </div>
+            <div>
+                <label>Offset (ms):</label>
+                <input type="number" id="offset" value="1000" min="50" max="100000" class="numeric-only">
+            </div>
+            <div>
+                <label>Duration (ms):</label>
+                <input type="number" id="duration" value="1000" min="50" max="100000" class="numeric-only">
+            </div>
         </div>
     </div>
     </main>

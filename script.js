@@ -25,15 +25,6 @@ function showError(string) {
 	}
 }
 
-function validateFrequency(number) {
-	if (Number.isNaN(result) || result < 20 | result > 20_000) {
-		showError("Invalid Frequency found. Setting to 440");
-		return 440;
-	} else {
-		return number;
-	}
-}
-
 function startAudio() {
     // Start audio: create oscillator and gain node
     oscillator = audioContext.createOscillator();
@@ -77,13 +68,51 @@ document.getElementById('startBtn').addEventListener('click', async () => {
     }
 });
 
-// Frequency Slider Controls
+// Frequency  Controls
 document.getElementById('freq').addEventListener('input', (e) => {
-    let freq = parseFloat(e.target.value);
-    freq = validateFrequency(freq);
+	 // Validation occurs in 'beforeinput'
+    const freq = parseFloat(e.target.value);
     
     if (oscillator) {
         oscillator.frequency.value = freq; // Update oscillator frequency
     }
 });
 
+document.addEventListener('beforeinput', (event) => {
+	if (event.target && event.target.classList.contains('numeric-only')) {
+		const elementId = event.target.id;
+		if (event.data && !/^[0-9]+$/.test(event.data)) {
+			event.preventDefault(); // Blocks the character from being typed
+		}
+		const numericInput = document.getElementById(elementId);
+
+		const currentValue = numericInput.value;
+		const targetRanges = event.getTargetRanges();
+
+		let start = currentValue.length;
+		let end = currentValue.length;
+
+		if (targetRanges && targetRanges.length > 0) {
+			const range = targetRanges[0];
+			start = range.startOffset;
+			end = range.endOffset;
+		} else {
+			// Fallback just in case targetRanges isn't supported by an old browser
+			start = numericInput.selectionStart ?? currentValue.length;
+			end = numericInput.selectionEnd ?? currentValue.length;
+		}
+
+		// 3. Predict the future value using the event's ranges
+		const predictedValue = 
+			currentValue.slice(0, start) + 
+			event.data + 
+			currentValue.slice(end);
+
+		// 4. Validate
+		const predictedNumber = parseInt(predictedValue, 10);
+
+		if (predictedNumber > parseInt(numericInput.max) || predictedNumber < parseInt(numericInput.min)) {
+			event.preventDefault(); // Block the input because it would exceed 100
+		}
+	}
+});
