@@ -13,7 +13,10 @@
     </header>
 
     <main>
-        <canvas id="rawCanvas" width="500" height="300" style="border:1px solid #ccc;"></canvas>
+        <div class="chart-content" id="chartContentWrapper">
+            <canvas id="rawCanvas" width="1024" height="768" style="border:1px solid #ccc;"></canvas>
+            <div class="x-axis-labels" id="labelsContainer"></div>
+        </div>
         <div class="controls" id="controls">
         <button id="startBtn">Start Audio</button>
         <button id="addNewInput">+</button>

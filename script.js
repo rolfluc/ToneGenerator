@@ -94,6 +94,7 @@ function stopOscillators() {
 
 document.getElementById('addNewInput').addEventListener('click', async () => {
 	addMoreSources();
+	updateGraph();
 });
 
 // Start / Stop
@@ -165,17 +166,104 @@ document.addEventListener('beforeinput', (event) => {
 });
 
 function updateGraph() {
+	const labelsContainer = document.getElementById('labelsContainer');
+	const canvas = document.getElementById('rawCanvas');
+	const ctx = canvas.getContext('2d');
+	const PADDING_LEFT = 70;   // Space reserved for the left text icon
+	const PADDING_RIGHT = 20;
+	const PADDING_Y = 10;
+	const CANVAS_WIDTH = parseInt(canvas.width); 
+	const CANVAS_HEIGHT = parseInt(canvas.height);
+	const TICK_COUNT = 21;
+	const STEP_X = (CANVAS_WIDTH - PADDING_LEFT - PADDING_RIGHT) / (TICK_COUNT-1);
+	ctx.clearRect(0, 0, canvas.width, canvas.height); 
+	ctx.strokeStyle = '#e0e0e0'; // Light gray for grid lines
+    ctx.lineWidth = 2;
+    // 1, it's 768, 2 its 384, ect.
+    const SEGMENT_HEIGHT = CANVAS_HEIGHT / audioCounter;
+
+    let earliestTimeMs = 10000;
+	let latestTimeMs = 0;
 	for (let i = 0; i < audioCounter; i++) {
-		const canvas = document.getElementById('rawCanvas');
-		const ctx = canvas.getContext('2d');
+		const duration  = parseFloat(document.getElementById(baseDurationID + i.toString()).value); 
+		const startTime = parseFloat(document.getElementById(baseOffsetID + i.toString()).value);
+		earliestTimeMs = Math.min(earliestTimeMs,startTime);
+		latestTimeMs = Math.max(latestTimeMs,startTime + duration);
+	}
+	let ticks = [];
+	for (let i = 0; i < TICK_COUNT; i++) {
+		ticks.push(i * latestTimeMs / (TICK_COUNT-1));
+	}
+
+    // Add the left boundary line
+    ctx.beginPath();
+    ctx.moveTo(PADDING_LEFT, 0);
+    ctx.lineTo(PADDING_LEFT, canvas.height); 
+	ctx.stroke();
+
+	// Clear any previous HTML labels before generating new ones
+    labelsContainer.innerHTML = '';
+
+    // Create the initial spacer so labels align exactly past the left padding line
+    const spacer = document.createElement('div');
+    spacer.className = 'axis-spacer';
+    spacer.style.width = PADDING_LEFT + 'px';
+    labelsContainer.appendChild(spacer);
+
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= TICK_COUNT-1; i++) {
+        const x = PADDING_LEFT + (i * STEP_X);
+        
+        // Draw the native canvas tick mark
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT - 6); 
+        ctx.stroke();
+
+        // Create the outside-of-canvas HTML text label
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'tick-label';
+        // Space them apart exactly at our STEP_X interval
+        if (i > 0) labelDiv.style.marginLeft = STEP_X + 'px'; 
+        
+        // TODO migrate this timing over
+        labelDiv.innerHTML = `<span>${ticks[i]}</span>`;
+        labelsContainer.appendChild(labelDiv);
+    }
+
+    const totalScale = ticks[TICK_COUNT - 1] - ticks[0];
+	const totalXWorkable = CANVAS_WIDTH - PADDING_LEFT - PADDING_RIGHT;
+	const pixelsPerMs = totalXWorkable / totalScale;
+
+	for (let i = 0; i < audioCounter; i++) {
+		const frequency = document.getElementById(baseFrequencyID + i.toString()).value;
+		const duration  = parseFloat(document.getElementById(baseDurationID + i.toString()).value); 
+		const startTime = parseFloat(document.getElementById(baseOffsetID + i.toString()).value);
+		const textPosY = (i*SEGMENT_HEIGHT + (i+1)*SEGMENT_HEIGHT) / 2;
+		const gridLinesY = [i*SEGMENT_HEIGHT, (i+1)*SEGMENT_HEIGHT];
+		// Segmentation Line
+		gridLinesY.forEach(y => {
+	        ctx.beginPath();
+	        ctx.moveTo(0, y); // Start at the edge of the chart area
+	        ctx.lineTo(canvas.width, y); // Span to the end of the chart
+	        ctx.stroke();
+	    });
+
+	    ctx.strokeStyle = '#666';
+	    ctx.lineWidth = 1.5;
+
+		ctx.font = "20px Georgia";
+		ctx.fillText(frequency.toString(), 5, textPosY);
+
+
+
 
 		// Data points: [X, Y] coordinates
 		const points = [
-		    { x: 50,  y: 250 },
-		    { x: 150, y: 180 },
-		    { x: 250, y: 220 },
-		    { x: 350, y: 100 },
-		    { x: 450, y: 50 }
+		    { x: PADDING_LEFT + pixelsPerMs * startTime, y: (i+1)*(SEGMENT_HEIGHT) - PADDING_Y},
+		    { x: PADDING_LEFT + pixelsPerMs * startTime, y: i*(SEGMENT_HEIGHT) + PADDING_Y},
+		    { x: PADDING_LEFT + pixelsPerMs * (startTime + duration), y: i*(SEGMENT_HEIGHT) + PADDING_Y},
+		    { x: PADDING_LEFT + pixelsPerMs * (startTime + duration), y: (i+1)*(SEGMENT_HEIGHT) - PADDING_Y},
 		];
 
 		// Draw the graph line

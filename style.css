@@ -4,7 +4,7 @@ body {
 }
 .scroll-box {
     width: 300px;        /* Set your preferred width */
-    height: 200px;       /* Critical: Sets the boundary limit */
+    height: 400px;       /* Critical: Sets the boundary limit */
     border: 1px solid #ccc;
     padding: 15px;
     
@@ -17,4 +17,51 @@ body {
     height: 2px;                /* Sets the thickness of the line */
     margin-top: 10px;           /* Adds a small gap directly below the div */
     width: 300px;               /* Optional: Match the exact width of your box */
+}
+
+.x-axis-labels {
+    display: flex;
+    box-sizing: border-box;
+    padding-top: 8px;
+    padding-bottom: 12px;
+    font-family: sans-serif;
+    font-size: 12px;
+    color: #444;
+}
+
+/* The blank spacer matching our left padding zone */
+.axis-spacer {
+    flex-shrink: 0;
+}
+
+/* Each individual tick text wrapper */
+.tick-label {
+    width: 0;
+    position: relative;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Inner text centering trick to handle 0-width flex points */
+.tick-label span {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+/* This container handles the horizontal scrolling for BOTH the canvas and labels */
+.chart-scroll-container {
+    width: 100%;
+    overflow-x: auto; 
+    border: 1px solid #ccc;
+    background: #f9f9f9;
+}
+
+/* Forces the inner elements to respect the dynamically calculated width */
+.chart-content {
+    position: relative;
+}
+
+canvas {
+    display: block;
 }
