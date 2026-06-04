@@ -7,12 +7,14 @@ let gainNode;
 
 // TODO kinda brittle. 
 let oscillators = [];
+let colors = [];
 let audioCounter = 0; 
 
 audioContext = new AudioContext();
 gainNode = audioContext.createGain();
 gainNode.gain.value = 0.15; 
 addMoreSources();
+updateGraph();
 
 
 function FinishedFading(box) {
@@ -20,7 +22,15 @@ function FinishedFading(box) {
     genbox.style.visibility = "hidden";
 }
 
-
+function generateRandomHex() {
+    // Generate a random number between 0 and 16777215 (which is FFFFFF in hex)
+    const randomNumber = Math.floor(Math.random() * 16777215);
+    
+    // Convert to hex and ensure it is exactly 6 characters long
+    const hexColor = "#" + randomNumber.toString(16).padStart(6, '0');
+    
+    return hexColor;
+}
 
 function showError(string) {
 	var genbox = document.getElementById("generatedstring");
@@ -40,6 +50,8 @@ function showError(string) {
 }
 
 function addMoreSources() {
+	const color = generateRandomHex();
+	colors.push(color);
 	const newAudioHTML = `
         <div class="audio-group">
             <div>
@@ -54,7 +66,7 @@ function addMoreSources() {
                 <label for="duration_${audioCounter}">Duration (ms):</label>
                 <input type="number" id="duration_${audioCounter}" value="1000" min="50" max="10000" class="numeric-only">
             </div>
-            <hr class="separator-line">
+            <hr class="separator-line" style="background-color: ${color} !important; border: none !important; height: 2px !important;">
         </div>
     `;
 
@@ -152,39 +164,48 @@ document.addEventListener('beforeinput', (event) => {
 	}
 });
 
+function updateGraph() {
+	for (let i = 0; i < audioCounter; i++) {
+		const canvas = document.getElementById('rawCanvas');
+		const ctx = canvas.getContext('2d');
 
+		// Data points: [X, Y] coordinates
+		const points = [
+		    { x: 50,  y: 250 },
+		    { x: 150, y: 180 },
+		    { x: 250, y: 220 },
+		    { x: 350, y: 100 },
+		    { x: 450, y: 50 }
+		];
 
+		// Draw the graph line
+		ctx.beginPath();
+		ctx.lineWidth = 3;
+		ctx.strokeStyle = colors[i];
 
-const canvas = document.getElementById('rawCanvas');
-const ctx = canvas.getContext('2d');
+		// Move to the first data point
+		ctx.moveTo(points[0].x, points[0].y);
 
-// Data points: [X, Y] coordinates
-const points = [
-    { x: 50,  y: 250 },
-    { x: 150, y: 180 },
-    { x: 250, y: 220 },
-    { x: 350, y: 100 },
-    { x: 450, y: 50 }
-];
+		// Draw lines connecting the rest of the points
+		for (let i = 1; i < points.length; i++) {
+		    ctx.lineTo(points[i].x, points[i].y);
+		}
+		ctx.stroke();
 
-// Draw the graph line
-ctx.beginPath();
-ctx.lineWidth = 3;
-ctx.strokeStyle = '#ff5733';
-
-// Move to the first data point
-ctx.moveTo(points[0].x, points[0].y);
-
-// Draw lines connecting the rest of the points
-for (let i = 1; i < points.length; i++) {
-    ctx.lineTo(points[i].x, points[i].y);
+		// Draw dots on top of the coordinates
+		ctx.fillStyle = '#333';
+		points.forEach(point => {
+		    ctx.beginPath();
+		    ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+		    ctx.fill();
+		});
+	}
 }
-ctx.stroke();
 
-// Draw dots on top of the coordinates
-ctx.fillStyle = '#333';
-points.forEach(point => {
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-    ctx.fill();
+// On changes, update the canvas.
+document.addEventListener('input', (event) => {
+	if (event.target && event.target.classList.contains('numeric-only')) {
+		updateGraph();
+	}
 });
+

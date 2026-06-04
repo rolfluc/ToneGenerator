@@ -15,7 +15,6 @@ body {
 .separator-line {
     border: none;               /* Remove default browser styling */
     height: 2px;                /* Sets the thickness of the line */
-    background-color: #333;     /* Sets the line color (e.g., dark gray or black) */
     margin-top: 10px;           /* Adds a small gap directly below the div */
     width: 300px;               /* Optional: Match the exact width of your box */
 }
