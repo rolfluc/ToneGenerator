@@ -8,6 +8,17 @@
     </header>
 
     <main>
+        <div class="tab-container">
+            <label>
+                <input type="radio" name="tabGroup" value="Tab 1">
+                <div class="tab-button">Tone Creator</div>
+            </label>
+            
+            <label>
+                <input type="radio" name="tabGroup" value="Tab 2" checked>
+                <div class="tab-button">Sound Deconstructor</div>
+            </label>
+        </div>
         <div class="chart-content" id="chartContentWrapper">
             <canvas id="rawCanvas" width="1024" height="768" style="border:1px solid #ccc;"></canvas>
             <div class="x-axis-labels" id="labelsContainer"></div>

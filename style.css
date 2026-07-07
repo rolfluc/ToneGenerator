@@ -65,3 +65,39 @@ body {
 canvas {
     display: block;
 }
+
+.tab-container {
+    display: flex;
+    gap: 4px; /* Space between tabs */
+    font-family: sans-serif;
+}
+
+/* Hide the default radio circle entirely */
+.tab-container input[type="radio"] {
+    display: none;
+}
+
+/* Style the labels to look like buttons/tabs */
+.tab-button {
+    padding: 10px 20px;
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+    border-bottom: none; /* Gives it a classic tab look */
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    user-select: none;
+}
+
+/* Hover effect */
+.tab-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* The Magic: Style the label ONLY when its hidden radio is :checked */
+.tab-container input[type="radio"]:checked + .tab-button {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}

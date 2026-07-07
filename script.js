@@ -297,3 +297,11 @@ document.addEventListener('input', (event) => {
 	}
 });
 
+const tabs = document.querySelectorAll('input[name="tabGroup"]');
+const selectionDisplay = document.getElementById('selectionDisplay');
+
+tabs.forEach(tab => {
+    tab.addEventListener('change', function() {
+        
+    });
+});
