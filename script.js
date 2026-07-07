@@ -16,6 +16,10 @@ gainNode.gain.value = 0.15;
 addMoreSources();
 updateGraph();
 
+ToneCreatorTabNumber = "Tab 1"
+SoundDeconstructorTabNumber = "Tab 2"
+
+const tabNames = [ToneCreatorTabNumber, SoundDeconstructorTabNumber];
 
 function FinishedFading(box) {
     var genbox = document.getElementById("generatedstring");
@@ -255,9 +259,6 @@ function updateGraph() {
 		ctx.font = "20px Georgia";
 		ctx.fillText(frequency.toString(), 5, textPosY);
 
-
-
-
 		// Data points: [X, Y] coordinates
 		const points = [
 		    { x: PADDING_LEFT + pixelsPerMs * startTime, y: (i+1)*(SEGMENT_HEIGHT) - PADDING_Y},
@@ -297,11 +298,32 @@ document.addEventListener('input', (event) => {
 	}
 });
 
+function setStatusForClass(targetClass, disabledStatus) {
+    const selector = `[class="${targetClass}"]`;
+    const controls = document.querySelectorAll(selector);
+    controls.forEach(item => {
+        item.disabled = disabledStatus;
+    });
+}
+
+function setEnabledStatuses(enableClass) {
+    for (let i = 0; i < tabNames.length; i++) {
+        // Disables the class if it's NOT the enabled one, enables it if it is
+        setStatusForClass(tabNames[i], tabNames[i] != enableClass);
+    }
+}
+
 const tabs = document.querySelectorAll('input[name="tabGroup"]');
 const selectionDisplay = document.getElementById('selectionDisplay');
 
 tabs.forEach(tab => {
     tab.addEventListener('change', function() {
-        
+        console.log(`Active Tab: ${this.value}`);
+        if (this.value == ToneCreatorTabNumber) {
+            setEnabledStatuses(this.value);
+            updateGraph();
+        } else if (this.value == SoundDeconstructorTabNumber) {
+            setEnabledStatuses(this.value);
+        }
     });
 });
