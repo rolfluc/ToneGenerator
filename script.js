@@ -520,21 +520,35 @@ document.getElementById('playMono').addEventListener('click', async () => {
 
 function generatePlotData(monoSignal, targetWidth) {
   const plotData = new Float32Array(targetWidth);
-  const blockSize = Math.floor(monoSignal.length / targetWidth);
+  const totalSamples = monoSignal.length;
 
-  for (let i = 0; i < targetWidth; i++) {
-    const start = i * blockSize;
-    const end = start + blockSize;
-    
-    let maxAmp = 0;
-    // Find the absolute peak amplitude within this pixel's block of data
-    for (let j = start; j < end; j++) {
-      const val = Math.abs(monoSignal[j]);
-      if (val > maxAmp) {
-        maxAmp = val;
+  // CASE 1: The audio file has plenty of samples (Downsample / Compress)
+  if (totalSamples >= targetWidth) {
+    const blockSize = Math.floor(totalSamples / targetWidth);
+
+    for (let i = 0; i < targetWidth; i++) {
+      const start = i * blockSize;
+      // Ensure we don't overflow the array boundary on the last pixel
+      const end = Math.min(start + blockSize, totalSamples);
+      
+      let maxAmp = 0;
+      for (let j = start; j < end; j++) {
+        const val = Math.abs(monoSignal[j]);
+        if (val > maxAmp) maxAmp = val;
       }
+      plotData[i] = maxAmp;
     }
-    plotData[i] = maxAmp; // Store values ranging 0.0 to 1.0
+  } 
+  // CASE 2: The audio file is incredibly short (Upsample / Stretch)
+  else {
+    for (let i = 0; i < targetWidth; i++) {
+      // Linearly map the current pixel column to a fractional index in the short audio array
+      const fraction = i / (targetWidth - 1);
+      const sampleIdx = Math.floor(fraction * (totalSamples - 1));
+      
+      // Pull the absolute amplitude at this specific point
+      plotData[i] = Math.abs(monoSignal[sampleIdx]);
+    }
   }
   
   return plotData;
