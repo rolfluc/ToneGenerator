@@ -53,6 +53,21 @@ function showError(string) {
 	}
 }
 
+function clearCanvas() {
+	const labelsContainer = document.getElementById('labelsContainer');
+	const canvas = document.getElementById('rawCanvas');
+	const ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, canvas.width, canvas.height); 
+	labelsContainer.innerHTML = '';
+}
+
+function clearAudioSources() {
+	audioBox.innerHTML = '';
+	audioCounter = 0;
+	oscillators = [];
+	colors = [];
+}
+
 function addMoreSources() {
 	const color = generateRandomHex();
 	colors.push(color);
@@ -314,16 +329,138 @@ function setEnabledStatuses(enableClass) {
 }
 
 const tabs = document.querySelectorAll('input[name="tabGroup"]');
-const selectionDisplay = document.getElementById('selectionDisplay');
 
 tabs.forEach(tab => {
     tab.addEventListener('change', function() {
         console.log(`Active Tab: ${this.value}`);
         if (this.value == ToneCreatorTabNumber) {
             setEnabledStatuses(this.value);
+            addMoreSources();
             updateGraph();
         } else if (this.value == SoundDeconstructorTabNumber) {
             setEnabledStatuses(this.value);
+            clearCanvas();
+            clearAudioSources();
         }
     });
 });
+
+async function getAudioData(fileOrUrl) {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  // Fetch or read file into an ArrayBuffer
+  const response = await fetch(fileOrUrl);
+  const arrayBuffer = await response.arrayBuffer();
+  
+  // Decode into PCM audio channels
+  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  
+  // Grab the raw samples from the first channel (Left/Mono)
+  const channelData = audioBuffer.getChannelData(0); 
+  const sampleRate = audioBuffer.sampleRate;
+
+  return { channelData, sampleRate };
+}
+
+function computeFFT(realInput) {
+  const N = realInput.length;
+  const real = new Float32Array(realInput); // clone to avoid mutation
+  const imag = new Float32Array(N);
+  
+  // 1. Bit-reversal permutation
+  let i = 0;
+  for (let j = 1; j < N - 1; j++) {
+    let bit = N >> 1;
+    while (i >= bit) { i -= bit; bit >>= 1; }
+    i += bit;
+    if (j < i) {
+      let t = real[j]; real[j] = real[i]; real[i] = t;
+      t = imag[j]; imag[j] = imag[i]; imag[i] = t;
+    }
+  }
+  
+  // 2. Cooley-Tukey Decimation-in-Time
+  for (let len = 2; len <= N; len <<= 1) {
+    let ang = (2 * Math.PI / len) * -1;
+    let wlen_re = Math.cos(ang);
+    let wlen_im = Math.sin(ang);
+    for (let i = 0; i < N; i += len) {
+      let w_re = 1, w_im = 0;
+      for (let j = 0; j < len / 2; j++) {
+        let u_re = real[i + j], u_im = imag[i + j];
+        let idx = i + j + len / 2;
+        let v_re = real[idx] * w_re - imag[idx] * w_im;
+        let v_im = real[idx] * w_im + imag[idx] * w_re;
+        
+        real[i + j] = u_re + v_re;
+        imag[i + j] = u_im + v_im;
+        real[idx] = u_re - v_re;
+        imag[idx] = u_im - v_im;
+        
+        let next_w_re = w_re * wlen_re - w_im * wlen_im;
+        w_im = w_re * wlen_im + w_im * wlen_re;
+        w_re = next_w_re;
+      }
+    }
+  }
+  
+  // 3. Compute absolute magnitudes for the real half (Nyquist limit)
+  const magnitudes = new Float32Array(N / 2);
+  for (let k = 0; k < N / 2; k++) {
+    magnitudes[k] = Math.sqrt(real[k] * real[k] + imag[k] * imag[k]);
+  }
+  return magnitudes;
+}
+
+function getStrongestFrequencies(magnitudes, sampleRate, N, topK = 5) {
+  // Create objects containing the frequency mapping and magnitude
+  const bins = Array.from(magnitudes).map((mag, index) => ({
+    frequency: (index * sampleRate) / N,
+    magnitude: mag
+  }));
+
+  // Sort by magnitude descending
+  bins.sort((a, b) => b.magnitude - a.magnitude);
+
+  // Return the top strongest components
+  return bins.slice(0, topK);
+}
+
+document.getElementById('audioFile').addEventListener('change', async (event) => {
+	const file = event.target.files[0];
+	if (!file) return; // User canceled selection
+	// 1. Convert the file into an ArrayBuffer using the modern Blob API
+	try {
+	    const arrayBuffer = await file.arrayBuffer();
+	    
+	    // 2. Initialize your AudioContext and decode the raw data
+	    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+	    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+	    
+	    const channelData = audioBuffer.getChannelData(0); // Left/Mono channel
+	    const sampleRate = audioBuffer.sampleRate;
+	    
+	    // 3. Pick your window size and extract the samples
+	    const N = 2048; 
+	    const sampleChunk = channelData.slice(0, N);
+	    
+	    // 4. Run the math functions we created earlier
+	    const magnitudes = computeFFT(sampleChunk);
+	    const topPeaks = getStrongestFrequencies(magnitudes, sampleRate, N, 5); 
+
+	    // 5. Output your results
+	    displayResults(topPeaks);
+		} catch (error) {
+	    	console.error("Error decoding or processing the WAV file:", error);
+	    alert("Could not process this file. Make sure it is a valid uncompressed WAV file.");
+	}
+});
+
+// Simple UI helper to log out the frequencies nicely
+function displayResults(peaks) {
+	console.log("Top Peaks Found:", peaks);
+	// Example: display "Hz" cleanly to the user
+	peaks.forEach((peak, i) => {
+		console.log(`Rank ${i+1}: ${peak.frequency.toFixed(1)} Hz (Magnitude: ${peak.magnitude.toFixed(2)})`);
+	});
+}

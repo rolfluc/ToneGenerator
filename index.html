@@ -10,12 +10,12 @@
     <main>
         <div class="tab-container">
             <label>
-                <input type="radio" name="tabGroup" value="Tab 1">
+                <input type="radio" name="tabGroup" value="Tab 1" checked>
                 <div class="tab-button">Tone Creator</div>
             </label>
             
             <label>
-                <input type="radio" name="tabGroup" value="Tab 2" checked>
+                <input type="radio" name="tabGroup" value="Tab 2">
                 <div class="tab-button">Sound Deconstructor</div>
             </label>
         </div>
@@ -26,7 +26,7 @@
         <div class="controls" id="controls">
             <button id="startBtn" class="Tab 1">Start Audio</button>
             <button id="addNewInput" class="Tab 1">+</button>
-            <input type="file" id="audioFile" accept=".mp3, .wav" disabled class="Tab 2">
+            <input type="file" id="audioFile" accept=".wav" disabled class="Tab 2">
         <div class="scroll-box" id="audioBox">
         </div>
     </div>

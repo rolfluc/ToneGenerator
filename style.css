@@ -80,7 +80,7 @@ canvas {
 /* Style the labels to look like buttons/tabs */
 .tab-button {
     padding: 10px 20px;
-    background-color: #f0f0f0;
+    background-color: #808080;
     color: #333;
     border: 1px solid #ccc;
     border-bottom: none; /* Gives it a classic tab look */
