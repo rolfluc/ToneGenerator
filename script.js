@@ -9,6 +9,8 @@ let gainNode;
 let oscillators = [];
 let colors = [];
 let audioCounter = 0; 
+let monoSignal = null;
+let sampleRate = 0;
 
 audioContext = new AudioContext();
 gainNode = audioContext.createGain();
@@ -341,26 +343,10 @@ tabs.forEach(tab => {
             setEnabledStatuses(this.value);
             clearCanvas();
             clearAudioSources();
+            monoSignal = null;
         }
     });
 });
-
-async function getAudioData(fileOrUrl) {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  
-  // Fetch or read file into an ArrayBuffer
-  const response = await fetch(fileOrUrl);
-  const arrayBuffer = await response.arrayBuffer();
-  
-  // Decode into PCM audio channels
-  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-  
-  // Grab the raw samples from the first channel (Left/Mono)
-  const channelData = audioBuffer.getChannelData(0); 
-  const sampleRate = audioBuffer.sampleRate;
-
-  return { channelData, sampleRate };
-}
 
 function computeFFT(realInput) {
   const N = realInput.length;
@@ -412,10 +398,10 @@ function computeFFT(realInput) {
   return magnitudes;
 }
 
-function getStrongestFrequencies(magnitudes, sampleRate, N, topK = 5) {
+function getStrongestFrequencies(magnitudes, sample, N, topK = 5) {
   // Create objects containing the frequency mapping and magnitude
   const bins = Array.from(magnitudes).map((mag, index) => ({
-    frequency: (index * sampleRate) / N,
+    frequency: (index * sample) / N,
     magnitude: mag
   }));
 
@@ -426,11 +412,33 @@ function getStrongestFrequencies(magnitudes, sampleRate, N, topK = 5) {
   return bins.slice(0, topK);
 }
 
+function downmixToMono(audioBuffer) {
+  const totalSamples = audioBuffer.length;
+  const left = audioBuffer.getChannelData(0);
+  const isStereo = audioBuffer.numberOfChannels > 1;
+  
+  const mono = new Float32Array(totalSamples);
+  
+  if (isStereo) {
+    const right = audioBuffer.getChannelData(1);
+    for (let i = 0; i < totalSamples; i++) {
+      // Average the two channels together
+      mono[i] = (left[i] + right[i]) / 2;
+    }
+  } else {
+    // If it's already mono, just copy the data
+    mono.set(left);
+  }
+  
+  return mono;
+}
+
 document.getElementById('audioFile').addEventListener('change', async (event) => {
 	const file = event.target.files[0];
 	if (!file) return; // User canceled selection
-	// 1. Convert the file into an ArrayBuffer using the modern Blob API
 	try {
+		/*
+		// FFT:
 	    const arrayBuffer = await file.arrayBuffer();
 	    
 	    // 2. Initialize your AudioContext and decode the raw data
@@ -450,8 +458,15 @@ document.getElementById('audioFile').addEventListener('change', async (event) =>
 
 	    // 5. Output your results
 	    displayResults(topPeaks);
-		} catch (error) {
-	    	console.error("Error decoding or processing the WAV file:", error);
+	    */
+		const arrayBuffer = await file.arrayBuffer();
+	    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+	    
+	    sampleRate = audioBuffer.sampleRate;
+	    monoSignal = downmixToMono(audioBuffer);
+	} 
+	catch (error) {
+    	console.error("Error decoding or processing the WAV file:", error);
 	    alert("Could not process this file. Make sure it is a valid uncompressed WAV file.");
 	}
 });
@@ -464,3 +479,36 @@ function displayResults(peaks) {
 		console.log(`Rank ${i+1}: ${peak.frequency.toFixed(1)} Hz (Magnitude: ${peak.magnitude.toFixed(2)})`);
 	});
 }
+
+function playMonoSignal(signal, sample) {
+  // 2. Create an empty audio buffer block (1 channel, matching your exact sample count)
+  const playbackBuffer = audioContext.createBuffer(1, signal.length, sample);
+
+  // 3. Copy our downmixed mono data directly into channel 0 (the only channel)
+  playbackBuffer.copyToChannel(signal, 0);
+
+  // 4. Create a virtual playback node
+  const sourceNode = audioContext.createBufferSource();
+  sourceNode.buffer = playbackBuffer;
+
+  // 5. Connect the node to your speakers and play it!
+  sourceNode.connect(audioContext.destination);
+  sourceNode.start(0);
+
+  // Save the node reference so you can trigger a stop button later
+  currentAudioSource = sourceNode;
+  
+  console.log("Playing downmixed mono stream...");
+}
+
+document.getElementById('playMono').addEventListener('click', async () => {
+	if (monoSignal == null) {
+		return;
+	}
+	playMonoSignal(monoSignal,sampleRate);
+});
+
+document.getElementById('playSample').addEventListener('click', async () => {
+});
+
+
