@@ -23,6 +23,11 @@ SoundDeconstructorTabNumber = "Tab 2"
 
 const tabNames = [ToneCreatorTabNumber, SoundDeconstructorTabNumber];
 
+// Clear the input value
+document.getElementById("audioFile").value = "";
+document.getElementById("defTab").checked = true;
+setEnabledStatuses(ToneCreatorTabNumber);
+
 function FinishedFading(box) {
     var genbox = document.getElementById("generatedstring");
     genbox.style.visibility = "hidden";
@@ -464,6 +469,13 @@ document.getElementById('audioFile').addEventListener('change', async (event) =>
 	    
 	    sampleRate = audioBuffer.sampleRate;
 	    monoSignal = downmixToMono(audioBuffer);
+	    const canvas = document.getElementById('rawCanvas');
+    
+	    // 3. Process data points down to fit the canvas width
+	    const plotData = generatePlotData(monoSignal, canvas.width);
+	    
+	    // 4. Draw it!
+	    drawWaveform(plotData, canvas);
 	} 
 	catch (error) {
     	console.error("Error decoding or processing the WAV file:", error);
@@ -496,9 +508,7 @@ function playMonoSignal(signal, sample) {
   sourceNode.start(0);
 
   // Save the node reference so you can trigger a stop button later
-  currentAudioSource = sourceNode;
-  
-  console.log("Playing downmixed mono stream...");
+  currentAudioSource = sourceNode; 
 }
 
 document.getElementById('playMono').addEventListener('click', async () => {
@@ -508,7 +518,54 @@ document.getElementById('playMono').addEventListener('click', async () => {
 	playMonoSignal(monoSignal,sampleRate);
 });
 
+function generatePlotData(monoSignal, targetWidth) {
+  const plotData = new Float32Array(targetWidth);
+  const blockSize = Math.floor(monoSignal.length / targetWidth);
+
+  for (let i = 0; i < targetWidth; i++) {
+    const start = i * blockSize;
+    const end = start + blockSize;
+    
+    let maxAmp = 0;
+    // Find the absolute peak amplitude within this pixel's block of data
+    for (let j = start; j < end; j++) {
+      const val = Math.abs(monoSignal[j]);
+      if (val > maxAmp) {
+        maxAmp = val;
+      }
+    }
+    plotData[i] = maxAmp; // Store values ranging 0.0 to 1.0
+  }
+  
+  return plotData;
+}
+
+/**
+ * Renders the amplitude stream symmetrically onto a canvas context
+ */
+function drawWaveform(amplitudes, canvas) {
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const centerY = height / 2;
+
+  // Clear previous drawings
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#10b981'; // Waveform color (Emerald green)
+
+  // Draw each data point as a vertical bar
+  for (let x = 0; x < width; x++) {
+    const amplitude = amplitudes[x];
+    const barHeight = amplitude * centerY; // Scale to fit half-height of canvas
+
+    // Draw symmetrically up and down from the center line
+    ctx.fillRect(x, centerY - barHeight, 1, barHeight * 2);
+  }
+}
+
+
 document.getElementById('playSample').addEventListener('click', async () => {
+
 });
 
 
